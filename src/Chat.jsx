@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
+
 
 export const Chat = () => {
   const [message, setMessage] = useState('');
@@ -51,7 +51,7 @@ useEffect(() => {
       if (messagesArray.length > 0 && 
           messagesArray[messagesArray.length - 1].sender !== username &&
           notificationsEnabled) {
-        notificationSound.play();
+        
         if (Notification.permission === 'granted') {
           new Notification(`Новое сообщение от ${messagesArray[messagesArray.length - 1].sender}`, {
             body: messagesArray[messagesArray.length - 1].text
@@ -251,5 +251,6 @@ useEffect(() => {
     </Paper>
   );
 };
+
 
 
