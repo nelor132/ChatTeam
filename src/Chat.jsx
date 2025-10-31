@@ -119,8 +119,13 @@ export const Chat = () => {
     const unsubscribeTyping = onValue(typingRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const usersTyping = Object.keys(data).filter(user => data[user] && user !== username);
+        // Фильтруем только активных пользователей (значение true) и исключаем текущего пользователя
+        const usersTyping = Object.entries(data)
+          .filter(([user, isTyping]) => isTyping === true && user !== username)
+          .map(([user]) => user);
         setTypingUsers(usersTyping);
+      } else {
+        setTypingUsers([]);
       }
     });
 
@@ -157,6 +162,8 @@ export const Chat = () => {
       unsubscribeMessages();
       unsubscribeTyping();
       unsubscribeOnlineUsers();
+      // Очищаем статус печати при размонтировании
+      set(ref(db, 'typing/' + username), false);
       // Remove user when component unmounts
       set(userRef, null);
     };
@@ -174,9 +181,16 @@ export const Chat = () => {
   }, [username]);
 
   const handleTyping = () => {
+    // Устанавливаем статус печати
     set(ref(db, 'typing/' + username), true);
+    
+    // Очищаем предыдущий таймаут
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => set(ref(db, 'typing/' + username), false), 3000);
+    
+    // Устанавливаем новый таймаут для очистки статуса печати
+    typingTimeoutRef.current = setTimeout(() => {
+      set(ref(db, 'typing/' + username), false);
+    }, 3000);
   };
 
   const handleFileSelect = (event) => {
@@ -238,10 +252,11 @@ export const Chat = () => {
       timestamp: Date.now()
     });
 
+    // Очищаем статус печати при отправке сообщения
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
-      set(ref(db, 'typing/' + username), false);
     }
+    set(ref(db, 'typing/' + username), false);
 
     setMessage('');
     setSelectedFile(null);
