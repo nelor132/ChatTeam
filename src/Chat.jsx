@@ -4,7 +4,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { 
   TextField, Button, Box, List, ListItem, Paper, Typography, 
   IconButton, Badge, Chip, CircularProgress, Alert, Container,
-  Avatar, ListItemAvatar, ListItemText
+  Avatar, ListItemAvatar, ListItemText, Modal, Fade, Backdrop
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SendIcon from '@mui/icons-material/Send';
@@ -14,6 +14,8 @@ import AudioFileIcon from '@mui/icons-material/AudioFile';
 import VideoFileIcon from '@mui/icons-material/Videocam';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PeopleIcon from '@mui/icons-material/People';
+import CloseIcon from '@mui/icons-material/Close';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { db, storage } from './firebase';
 
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
@@ -73,6 +75,8 @@ export const Chat = () => {
   const [error, setError] = useState('');
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -178,35 +182,19 @@ export const Chat = () => {
     event.target.value = '';
   };
 
-  // Альтернативная функция загрузки с обработкой CORS ошибок
-  const uploadFile = async (file) => {
-    setUploading(true);
-    try {
-      // Для небольших файлов используем base64 как временное решение
-      if (file.size < 5 * 1024 * 1024) { // 5MB
-        return await uploadFileAsBase64(file);
-      } else {
-        // Пытаемся загрузить в Storage
-        const fileRef = storageRef(storage, `chat_files/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        return { 
-          url, 
-          name: file.name, 
-          type: getFileType(file.type), 
-          size: file.size, 
-          contentType: file.type 
-        };
-      }
-    } catch (e) {
-      console.error('Upload error:', e);
-      // Если загрузка в Storage не удалась, используем base64
-      return await uploadFileAsBase64(file);
-    } finally {
-      setUploading(false);
-    }
+  // Функция для открытия изображения в модальном окне
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setImageModalOpen(true);
   };
 
+  // Функция для закрытия модального окна
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    setSelectedImage('');
+  };
+
+  // Используем только base64 для избежания CORS ошибок
   const uploadFileAsBase64 = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -225,10 +213,12 @@ export const Chat = () => {
 
   const handleSend = async () => {
     if (!message.trim() && !selectedFile) return;
+    
+    setUploading(true);
     let fileData = null;
+    
     if (selectedFile) {
-      fileData = await uploadFile(selectedFile);
-      if (!fileData) return;
+      fileData = await uploadFileAsBase64(selectedFile);
     }
 
     push(ref(db, 'messages'), {
@@ -246,6 +236,7 @@ export const Chat = () => {
 
     setMessage('');
     setSelectedFile(null);
+    setUploading(false);
   };
 
   const handleSetName = () => { 
@@ -273,12 +264,19 @@ export const Chat = () => {
             maxWidth: '100%', 
             maxHeight: 200, 
             borderRadius: 8,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer'
           }}
+          onClick={() => openImageModal(URL.createObjectURL(file))}
         />
-        <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-          {file.name} ({(file.size / 1024).toFixed(1)} KB)
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1 }}>
+          <Typography variant="caption">
+            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          </Typography>
+          <IconButton size="small" onClick={() => openImageModal(URL.createObjectURL(file))}>
+            <ZoomInIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </Box>
     );
     return (
@@ -295,12 +293,11 @@ export const Chat = () => {
   const renderMessageContent = (msg) => {
     if (!msg.file) return <Typography sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>;
     
-    // Если файл в base64
-    if (msg.file.isBase64) {
-      switch (msg.file.type) {
-        case 'image':
-          return (
-            <Box>
+    switch (msg.file.type) {
+      case 'image':
+        return (
+          <Box>
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
               <img 
                 src={msg.file.url} 
                 alt={msg.file.name} 
@@ -308,45 +305,28 @@ export const Chat = () => {
                   maxWidth: '100%', 
                   maxHeight: 300, 
                   borderRadius: 8,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  cursor: 'pointer'
                 }} 
+                onClick={() => openImageModal(msg.file.url)}
               />
-              <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-                {msg.file.name}
-              </Typography>
+              <IconButton 
+                size="small"
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                  }
+                }}
+                onClick={() => openImageModal(msg.file.url)}
+              >
+                <ZoomInIcon fontSize="small" />
+              </IconButton>
             </Box>
-          );
-        default:
-          return (
-            <Button 
-              variant="outlined" 
-              size="small"
-              onClick={() => window.open(msg.file.url, '_blank')}
-              startIcon={getFileIcon(msg.file.type)}
-            >
-              Скачать {msg.file.name}
-            </Button>
-          );
-      }
-    }
-    
-    // Если файл из Storage
-    switch (msg.file.type) {
-      case 'image': 
-        return (
-          <Box>
-            <img 
-              src={msg.file.url} 
-              alt={msg.file.name} 
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: 300, 
-                borderRadius: 8,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }} 
-              onClick={() => window.open(msg.file.url,'_blank')}
-            />
             <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
               {msg.file.name}
             </Typography>
@@ -391,6 +371,61 @@ export const Chat = () => {
         );
     }
   };
+
+  // Модальное окно для просмотра изображения
+  const ImageModal = () => (
+    <Modal
+      open={imageModalOpen}
+      onClose={closeImageModal}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 500,
+      }}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2
+      }}
+    >
+      <Fade in={imageModalOpen}>
+        <Box sx={{
+          position: 'relative',
+          outline: 'none',
+          maxWidth: '90vw',
+          maxHeight: '90vh'
+        }}>
+          <IconButton
+            onClick={closeImageModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.7)',
+              }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <img
+            src={selectedImage}
+            alt="Увеличенное изображение"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '90vh',
+              borderRadius: 8,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+            }}
+          />
+        </Box>
+      </Fade>
+    </Modal>
+  );
 
   if (!isNameSet) {
     return (
@@ -654,6 +689,9 @@ export const Chat = () => {
           </Box>
         </Paper>
       </Container>
+
+      {/* Модальное окно для просмотра изображений */}
+      <ImageModal />
     </Box>
   );
 };
