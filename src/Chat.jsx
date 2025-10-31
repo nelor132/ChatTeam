@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { ref, push, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   TextField, Button, Box, List, ListItem, Paper, Typography, 
   IconButton, Badge, Chip, CircularProgress, Alert, Container,
@@ -16,7 +15,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PeopleIcon from '@mui/icons-material/People';
 import CloseIcon from '@mui/icons-material/Close';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import { db, storage } from './firebase';
+import { db } from './firebase';
 
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
 
@@ -81,6 +80,15 @@ export const Chat = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Загрузка ника из localStorage при монтировании
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('chatUsername');
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setIsNameSet(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isNameSet) return;
@@ -158,11 +166,12 @@ export const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Сохранение ника в localStorage при изменении
   useEffect(() => {
-    if (isNameSet) {
+    if (username) {
       localStorage.setItem('chatUsername', username);
     }
-  }, [username, isNameSet]);
+  }, [username]);
 
   const handleTyping = () => {
     set(ref(db, 'typing/' + username), true);
@@ -194,7 +203,7 @@ export const Chat = () => {
     setSelectedImage('');
   };
 
-  // Используем только base64 для избежания CORS ошибок
+  // Функция загрузки файла как base64
   const uploadFileAsBase64 = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -240,7 +249,10 @@ export const Chat = () => {
   };
 
   const handleSetName = () => { 
-    if (username.trim()) setIsNameSet(true); 
+    if (username.trim()) {
+      setIsNameSet(true);
+      localStorage.setItem('chatUsername', username);
+    }
   };
 
   const toggleNotifications = () => {
@@ -259,7 +271,7 @@ export const Chat = () => {
       <Box sx={{ mt: 1, textAlign: 'center' }}>
         <img 
           src={URL.createObjectURL(file)} 
-          alt="" 
+          alt="Превью" 
           style={{ 
             maxWidth: '100%', 
             maxHeight: 200, 
@@ -273,7 +285,11 @@ export const Chat = () => {
           <Typography variant="caption">
             {file.name} ({(file.size / 1024).toFixed(1)} KB)
           </Typography>
-          <IconButton size="small" onClick={() => openImageModal(URL.createObjectURL(file))}>
+          <IconButton 
+            size="small" 
+            onClick={() => openImageModal(URL.createObjectURL(file))}
+            title="Открыть в полном размере"
+          >
             <ZoomInIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -323,6 +339,7 @@ export const Chat = () => {
                   }
                 }}
                 onClick={() => openImageModal(msg.file.url)}
+                title="Открыть в полном размере"
               >
                 <ZoomInIcon fontSize="small" />
               </IconButton>
@@ -393,15 +410,18 @@ export const Chat = () => {
         <Box sx={{
           position: 'relative',
           outline: 'none',
-          maxWidth: '90vw',
-          maxHeight: '90vh'
+          maxWidth: '95vw',
+          maxHeight: '95vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           <IconButton
             onClick={closeImageModal}
             sx={{
               position: 'absolute',
-              top: 8,
-              right: 8,
+              top: 16,
+              right: 16,
               backgroundColor: 'rgba(0,0,0,0.5)',
               color: 'white',
               zIndex: 1,
@@ -409,6 +429,7 @@ export const Chat = () => {
                 backgroundColor: 'rgba(0,0,0,0.7)',
               }
             }}
+            size="large"
           >
             <CloseIcon />
           </IconButton>
@@ -417,10 +438,12 @@ export const Chat = () => {
             alt="Увеличенное изображение"
             style={{
               maxWidth: '100%',
-              maxHeight: '90vh',
+              maxHeight: '95vh',
               borderRadius: 8,
-              boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+              objectFit: 'contain'
             }}
+            onClick={closeImageModal} // Закрытие при клике на изображение
           />
         </Box>
       </Fade>
@@ -450,10 +473,10 @@ export const Chat = () => {
           }}
         >
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            Добро пожаловать!
+            Добро пожаловать в чат!
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Введите ваш никнейм для начала общения
+            {username ? `Привет, ${username}!` : 'Введите ваш никнейм для начала общения'}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
             <TextField 
@@ -469,10 +492,16 @@ export const Chat = () => {
               onClick={handleSetName}
               size="large"
               sx={{ minWidth: 120 }}
+              disabled={!username.trim()}
             >
-              Войти
+              {username ? 'Продолжить' : 'Войти'}
             </Button>
           </Box>
+          {username && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              Ваш ник будет сохранен для будущих посещений
+            </Typography>
+          )}
         </Paper>
       </Box>
     );
@@ -510,9 +539,14 @@ export const Chat = () => {
               alignItems: 'center'
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              💬 Чат: {username}
-            </Typography>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                💬 Чат
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                Вы вошли как: {username}
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <IconButton 
                 onClick={() => setShowOnlineUsers(!showOnlineUsers)}
