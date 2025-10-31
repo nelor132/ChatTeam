@@ -443,7 +443,7 @@ export const Chat = () => {
               boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
               objectFit: 'contain'
             }}
-            onClick={closeImageModal} // Закрытие при клике на изображение
+            onClick={closeImageModal}
           />
         </Box>
       </Fade>
@@ -454,12 +454,13 @@ export const Chat = () => {
     return (
       <Box
         sx={{
-          minHeight: '100vh',
+          height: '100vh',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 2
+          p: 2,
+          overflow: 'hidden'
         }}
       >
         <Paper 
@@ -510,9 +511,9 @@ export const Chat = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        py: 0
+        overflow: 'hidden'
       }}
     >
       <Container maxWidth="lg" sx={{ height: '100vh', py: 2 }}>
@@ -525,7 +526,6 @@ export const Chat = () => {
             borderRadius: 3,
             overflow: 'hidden',
             background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)'
           }}
         >
           {/* Header */}
@@ -536,7 +536,8 @@ export const Chat = () => {
               color: 'white',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}
           >
             <Box>
@@ -570,7 +571,7 @@ export const Chat = () => {
           </Box>
 
           {/* Main Content */}
-          <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
             {/* Online Users Sidebar */}
             {showOnlineUsers && (
               <Box 
@@ -579,7 +580,9 @@ export const Chat = () => {
                   bgcolor: 'grey.50',
                   borderRight: '1px solid',
                   borderColor: 'grey.200',
-                  p: 2
+                  p: 2,
+                  overflow: 'auto',
+                  flexShrink: 0
                 }}
               >
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -606,10 +609,10 @@ export const Chat = () => {
             )}
 
             {/* Chat Area */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               {/* Typing Indicator */}
               {typingUsers.length > 0 && (
-                <Box sx={{ px: 2, pt: 1 }}>
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
                   <Typography variant="caption" color="text.secondary">
                     {`${typingUsers.join(', ')} печатает...`}
                   </Typography>
@@ -618,7 +621,7 @@ export const Chat = () => {
 
               {/* Error Alert */}
               {error && (
-                <Box sx={{ px: 2, pt: 1 }}>
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
                   <Alert severity="error" onClose={() => setError('')}>
                     {error}
                   </Alert>
@@ -674,13 +677,13 @@ export const Chat = () => {
 
               {/* File Preview */}
               {selectedFile && (
-                <Box sx={{ px: 2, pt: 1 }}>
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
                   {renderFilePreview(selectedFile)}
                 </Box>
               )}
 
               {/* Input Area */}
-              <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'grey.200' }}>
+              <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'grey.200', flexShrink: 0 }}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
                   <input 
                     type="file" 
