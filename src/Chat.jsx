@@ -307,7 +307,7 @@ export const Chat = () => {
   };
 
   const renderMessageContent = (msg) => {
-    if (!msg.file) return <Typography sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>;
+    if (!msg.file) return <Typography sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.text}</Typography>;
     
     switch (msg.file.type) {
       case 'image':
@@ -516,7 +516,15 @@ export const Chat = () => {
         overflow: 'hidden'
       }}
     >
-      <Container maxWidth="lg" sx={{ height: '100vh', py: 2 }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          height: '100vh', 
+          py: 2,
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         <Paper 
           elevation={8} 
           sx={{ 
@@ -571,7 +579,12 @@ export const Chat = () => {
           </Box>
 
           {/* Main Content */}
-          <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flex: 1, 
+            overflow: 'hidden',
+            minHeight: 0
+          }}>
             {/* Online Users Sidebar */}
             {showOnlineUsers && (
               <Box 
@@ -609,7 +622,12 @@ export const Chat = () => {
             )}
 
             {/* Chat Area */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              minHeight: 0
+            }}>
               {/* Typing Indicator */}
               {typingUsers.length > 0 && (
                 <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
@@ -629,51 +647,46 @@ export const Chat = () => {
               )}
 
               {/* Messages List */}
-              <List 
-                sx={{ 
-                  flex: 1,
-                  overflow: 'auto',
-                  p: 1,
-                  bgcolor: 'background.default'
-                }}
-              >
-                {messages.map(msg => (
-                  <ListItem 
-                    key={msg.id} 
-                    sx={{ 
-                      justifyContent: msg.isMe ? 'flex-end' : 'flex-start',
-                      px: 1,
-                      py: 0.5
-                    }}
-                  >
-                    <Box 
+              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                <List sx={{ p: 1, bgcolor: 'background.default' }}>
+                  {messages.map(msg => (
+                    <ListItem 
+                      key={msg.id} 
                       sx={{ 
-                        bgcolor: msg.isMe ? 'primary.light' : 'white',
-                        p: 2,
-                        borderRadius: 2,
-                        maxWidth: '70%',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: msg.isMe ? 'none' : '1px solid',
-                        borderColor: 'grey.200'
+                        justifyContent: msg.isMe ? 'flex-end' : 'flex-start',
+                        px: 1,
+                        py: 0.5
                       }}
                     >
-                      <Typography 
-                        variant="caption" 
+                      <Box 
                         sx={{ 
-                          display: 'block',
-                          color: msg.isMe ? 'primary.dark' : 'text.secondary',
-                          fontWeight: 'bold',
-                          mb: 0.5
+                          bgcolor: msg.isMe ? 'primary.light' : 'white',
+                          p: 2,
+                          borderRadius: 2,
+                          maxWidth: '70%',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          border: msg.isMe ? 'none' : '1px solid',
+                          borderColor: 'grey.200'
                         }}
                       >
-                        {msg.sender} • {msg.time}
-                      </Typography>
-                      {renderMessageContent(msg)}
-                    </Box>
-                  </ListItem>
-                ))}
-                <div ref={messagesEndRef} />
-              </List>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            display: 'block',
+                            color: msg.isMe ? 'primary.dark' : 'text.secondary',
+                            fontWeight: 'bold',
+                            mb: 0.5
+                          }}
+                        >
+                          {msg.sender} • {msg.time}
+                        </Typography>
+                        {renderMessageContent(msg)}
+                      </Box>
+                    </ListItem>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </List>
+              </Box>
 
               {/* File Preview */}
               {selectedFile && (
@@ -683,7 +696,12 @@ export const Chat = () => {
               )}
 
               {/* Input Area */}
-              <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'grey.200', flexShrink: 0 }}>
+              <Box sx={{ 
+                p: 2, 
+                borderTop: '1px solid', 
+                borderColor: 'grey.200', 
+                flexShrink: 0 
+              }}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
                   <input 
                     type="file" 
