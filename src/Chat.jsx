@@ -53,7 +53,7 @@ useEffect(() => {
           notificationsEnabled) {
         
         if (Notification.permission === 'granted') {
-          new Notification(`Новое сообщение от ${messagesArray[messagesArray.length - 1].sender}`, {
+          new Notification(`Новую Хуйню написал пользователь по имени: ${messagesArray[messagesArray.length - 1].sender}`, {
             body: messagesArray[messagesArray.length - 1].text
           });
         }
@@ -251,6 +251,7 @@ useEffect(() => {
     </Paper>
   );
 };
+
 
 
 
