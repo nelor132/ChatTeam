@@ -178,20 +178,14 @@ export const Chat = () => {
     if (username) {
       localStorage.setItem('chatUsername', username);
     }
+    set(ref(db, 'typing/' + username), false);
   }, [username]);
 
   const handleTyping = () => {
-    // Устанавливаем статус печати
-    set(ref(db, 'typing/' + username), true);
-    
-    // Очищаем предыдущий таймаут
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
-    // Устанавливаем новый таймаут для очистки статуса печати
-    typingTimeoutRef.current = setTimeout(() => {
-      set(ref(db, 'typing/' + username), false);
-    }, 3000);
-  };
+  set(ref(db, 'typing/' + username), true);
+  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  typingTimeoutRef.current = setTimeout(() => set(ref(db, 'typing/' + username), false), 3000);
+};
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -788,3 +782,4 @@ export const Chat = () => {
     </Box>
   );
 };
+
