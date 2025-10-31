@@ -35,6 +35,7 @@ const getFileIcon = (fileType) => {
   }
 };
 
+// Функция для генерации цвета аватара
 const stringToColor = (string) => {
   let hash = 0;
   for (let i = 0; i < string.length; i++) {
@@ -48,15 +49,18 @@ const stringToColor = (string) => {
   return color;
 };
 
-const stringAvatar = (name) => ({
-  sx: {
-    bgcolor: stringToColor(name),
-    width: 32,
-    height: 32,
-    fontSize: '0.8rem'
-  },
-  children: `${name.split(' ')[0][0]}${name.split(' ')[1] ? name.split(' ')[1][0] : ''}`,
-});
+// Функция для аватара
+const stringAvatar = (name) => {
+  return {
+    sx: {
+      bgcolor: stringToColor(name),
+      width: 32,
+      height: 32,
+      fontSize: '0.8rem'
+    },
+    children: `${name.split(' ')[0][0]}${name.split(' ')[1] ? name.split(' ')[1][0] : ''}`,
+  };
+};
 
 export const Chat = () => {
   const [message, setMessage] = useState('');
@@ -72,11 +76,12 @@ export const Chat = () => {
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
-
+  
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Загрузка ника из localStorage при монтировании
   useEffect(() => {
     const savedUsername = localStorage.getItem('chatUsername');
     if (savedUsername) {
@@ -119,23 +124,40 @@ export const Chat = () => {
       }
     });
 
+    // Online users tracking
     const onlineUsersRef = ref(db, 'onlineUsers');
     const userRef = ref(db, `onlineUsers/${username}`);
-    set(userRef, { username, lastSeen: serverTimestamp(), joinedAt: serverTimestamp() });
-    onDisconnect(userRef).remove();
-
-    const unsubscribeOnlineUsers = onValue(onlineUsersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) setOnlineUsers(Object.values(data).map(u => u.username));
-      else setOnlineUsers([]);
+    
+    // Set user as online
+    set(userRef, {
+      username: username,
+      lastSeen: serverTimestamp(),
+      joinedAt: serverTimestamp()
     });
 
-    if (Notification.permission !== 'granted') Notification.requestPermission();
+    // Remove user when they disconnect
+    onDisconnect(userRef).remove();
+
+    // Listen for online users
+    const unsubscribeOnlineUsers = onValue(onlineUsersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const users = Object.values(data).map(user => user.username);
+        setOnlineUsers(users);
+      } else {
+        setOnlineUsers([]);
+      }
+    });
+
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
 
     return () => {
       unsubscribeMessages();
       unsubscribeTyping();
       unsubscribeOnlineUsers();
+      // Remove user when component unmounts
       set(userRef, null);
     };
   }, [username, notificationsEnabled, isNameSet]);
@@ -144,8 +166,11 @@ export const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Сохранение ника в localStorage при изменении
   useEffect(() => {
-    if (username) localStorage.setItem('chatUsername', username);
+    if (username) {
+      localStorage.setItem('chatUsername', username);
+    }
   }, [username]);
 
   const handleTyping = () => {
@@ -154,8 +179,8 @@ export const Chat = () => {
     typingTimeoutRef.current = setTimeout(() => set(ref(db, 'typing/' + username), false), 3000);
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       setError('Файл слишком большой. Максимум 10MB');
@@ -163,33 +188,47 @@ export const Chat = () => {
     }
     setSelectedFile(file);
     setError('');
-    e.target.value = '';
+    event.target.value = '';
   };
 
-  const openImageModal = (url) => {
-    setSelectedImage(url);
+  // Функция для открытия изображения в модальном окне
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
     setImageModalOpen(true);
   };
 
+  // Функция для закрытия модального окна
   const closeImageModal = () => {
     setImageModalOpen(false);
     setSelectedImage('');
   };
 
-  const uploadFileAsBase64 = (file) => new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      resolve({ url: e.target.result, name: file.name, type: getFileType(file.type), size: file.size, isBase64: true });
-    };
-    reader.readAsDataURL(file);
-  });
+  // Функция загрузки файла как base64
+  const uploadFileAsBase64 = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve({
+          url: e.target.result,
+          name: file.name,
+          type: getFileType(file.type),
+          size: file.size,
+          isBase64: true
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleSend = async () => {
     if (!message.trim() && !selectedFile) return;
+    
     setUploading(true);
-
     let fileData = null;
-    if (selectedFile) fileData = await uploadFileAsBase64(selectedFile);
+    
+    if (selectedFile) {
+      fileData = await uploadFileAsBase64(selectedFile);
+    }
 
     push(ref(db, 'messages'), {
       text: message,
@@ -209,7 +248,7 @@ export const Chat = () => {
     setUploading(false);
   };
 
-  const handleSetName = () => {
+  const handleSetName = () => { 
     if (username.trim()) {
       setIsNameSet(true);
       localStorage.setItem('chatUsername', username);
@@ -219,7 +258,9 @@ export const Chat = () => {
   const toggleNotifications = () => {
     if (Notification.permission !== 'granted') {
       Notification.requestPermission().then(p => setNotificationsEnabled(p === 'granted'));
-    } else setNotificationsEnabled(!notificationsEnabled);
+    } else {
+      setNotificationsEnabled(!notificationsEnabled);
+    }
   };
 
   const removeSelectedFile = () => setSelectedFile(null);
@@ -230,107 +271,256 @@ export const Chat = () => {
       <Box sx={{ mt: 1, textAlign: 'center' }}>
         <img 
           src={URL.createObjectURL(file)} 
-          alt="preview" 
-          style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+          alt="Превью" 
+          style={{ 
+            maxWidth: '100%', 
+            maxHeight: 200, 
+            borderRadius: 8,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer'
+          }}
           onClick={() => openImageModal(URL.createObjectURL(file))}
         />
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, mt: 1 }}>
-          <Typography variant="caption">{file.name} ({(file.size/1024).toFixed(1)} KB)</Typography>
-          <IconButton size="small" onClick={() => openImageModal(URL.createObjectURL(file))} title="Открыть в полном размере">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1 }}>
+          <Typography variant="caption">
+            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          </Typography>
+          <IconButton 
+            size="small" 
+            onClick={() => openImageModal(URL.createObjectURL(file))}
+            title="Открыть в полном размере"
+          >
             <ZoomInIcon fontSize="small" />
           </IconButton>
         </Box>
       </Box>
     );
-    return <Chip icon={getFileIcon(type)} label={`${file.name} (${(file.size/1024).toFixed(1)} KB)`} onDelete={removeSelectedFile} sx={{ mt: 1 }} variant="outlined" />;
+    return (
+      <Chip 
+        icon={getFileIcon(type)} 
+        label={`${file.name} (${(file.size / 1024).toFixed(1)} KB)`} 
+        onDelete={removeSelectedFile} 
+        variant="outlined" 
+        sx={{ mt: 1 }}
+      />
+    );
   };
 
   const renderMessageContent = (msg) => {
     if (!msg.file) return <Typography sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.text}</Typography>;
-    switch(msg.file.type) {
-      case 'image': 
+    
+    switch (msg.file.type) {
+      case 'image':
         return (
           <Box>
             <Box sx={{ position: 'relative', display: 'inline-block' }}>
               <img 
                 src={msg.file.url} 
                 alt={msg.file.name} 
-                style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer' }}
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: 300, 
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  cursor: 'pointer'
+                }} 
                 onClick={() => openImageModal(msg.file.url)}
               />
-              <IconButton size="small" sx={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', color: 'white', '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' } }} onClick={() => openImageModal(msg.file.url)} title="Открыть в полном размере">
-                <ZoomInIcon fontSize="small"/>
+              <IconButton 
+                size="small"
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                  }
+                }}
+                onClick={() => openImageModal(msg.file.url)}
+                title="Открыть в полном размере"
+              >
+                <ZoomInIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>{msg.file.name}</Typography>
+            <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+              {msg.file.name}
+            </Typography>
           </Box>
         );
-      case 'audio': return (
-        <Box>
-          <audio controls src={msg.file.url} style={{ width: '100%', maxWidth: 300 }} />
-          <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>{msg.file.name}</Typography>
-        </Box>
-      );
-      case 'video': return (
-        <Box>
-          <video controls src={msg.file.url} style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8 }} />
-          <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>{msg.file.name}</Typography>
-        </Box>
-      );
-      default: return (
-        <Button variant="outlined" size="small" onClick={() => window.open(msg.file.url, '_blank')} startIcon={getFileIcon('file')}>Скачать {msg.file.name}</Button>
-      );
+      case 'audio': 
+        return (
+          <Box>
+            <audio controls src={msg.file.url} style={{ width: '100%', maxWidth: 300 }} />
+            <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+              {msg.file.name}
+            </Typography>
+          </Box>
+        );
+      case 'video': 
+        return (
+          <Box>
+            <video 
+              controls 
+              src={msg.file.url} 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: 300,
+                borderRadius: 8
+              }}
+            />
+            <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+              {msg.file.name}
+            </Typography>
+          </Box>
+        );
+      default: 
+        return (
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={() => window.open(msg.file.url, '_blank')}
+            startIcon={getFileIcon('file')}
+          >
+            Скачать {msg.file.name}
+          </Button>
+        );
     }
   };
 
+  // Модальное окно для просмотра изображения
   const ImageModal = () => (
-    <Modal open={imageModalOpen} onClose={closeImageModal} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+    <Modal
+      open={imageModalOpen}
+      onClose={closeImageModal}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 500,
+      }}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2
+      }}
+    >
       <Fade in={imageModalOpen}>
-        <Box sx={{ position: 'relative', outline: 'none', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <IconButton onClick={closeImageModal} sx={{ position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(0,0,0,0.5)', color: 'white', zIndex: 1, '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' } }} size="large">
+        <Box sx={{
+          position: 'relative',
+          outline: 'none',
+          maxWidth: '95vw',
+          maxHeight: '95vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <IconButton
+            onClick={closeImageModal}
+            sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              zIndex: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.7)',
+              }
+            }}
+            size="large"
+          >
             <CloseIcon />
           </IconButton>
-          <img src={selectedImage} alt="Увеличенное изображение" style={{ maxWidth: '100%', maxHeight: '95vh', borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.3)', objectFit: 'contain' }} onClick={closeImageModal}/>
+          <img
+            src={selectedImage}
+            alt="Увеличенное изображение"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '95vh',
+              borderRadius: 8,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+              objectFit: 'contain'
+            }}
+            onClick={closeImageModal}
+          />
         </Box>
       </Fade>
     </Modal>
   );
 
-  if (!isNameSet) return (
-    <Box sx={{ 
-      height: '100vh', 
-      width: '100vw', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      overflow: 'hidden',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
-      <Paper elevation={8} sx={{ p: 4, maxWidth: 400, width: '100%', textAlign: 'center', borderRadius: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>Добро пожаловать в чат!</Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>{username ? `Привет, ${username}!` : 'Введите ваш никнейм для начала общения'}</Typography>
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <TextField fullWidth value={username} onChange={e => setUsername(e.target.value)} onKeyPress={e => e.key==='Enter' && handleSetName()} placeholder="Ваш никнейм" variant="outlined"/>
-          <Button variant="contained" onClick={handleSetName} size="large" sx={{ minWidth: 120 }} disabled={!username.trim()}>{username ? 'Продолжить' : 'Войти'}</Button>
-        </Box>
-        {username && <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>Ваш ник будет сохранен для будущих посещений</Typography>}
-      </Paper>
-    </Box>
-  );
+  if (!isNameSet) {
+    return (
+      <Box
+        sx={{
+          height: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2,
+          overflow: 'hidden'
+        }}
+      >
+        <Paper 
+          elevation={8} 
+          sx={{ 
+            padding: 4, 
+            maxWidth: 400, 
+            width: '100%',
+            textAlign: 'center',
+            borderRadius: 3
+          }}
+        >
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            Добро пожаловать в чат!
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            {username ? `Привет, ${username}!` : 'Введите ваш никнейм для начала общения'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+            <TextField 
+              fullWidth 
+              value={username} 
+              onChange={e => setUsername(e.target.value)} 
+              onKeyPress={e => e.key==='Enter' && handleSetName()} 
+              placeholder="Ваш никнейм"
+              variant="outlined"
+            />
+            <Button 
+              variant="contained" 
+              onClick={handleSetName}
+              size="large"
+              sx={{ minWidth: 120 }}
+              disabled={!username.trim()}
+            >
+              {username ? 'Продолжить' : 'Войти'}
+            </Button>
+          </Box>
+          {username && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              Ваш ник будет сохранен для будущих посещений
+            </Typography>
+          )}
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ 
-      height: '100vh', 
-      width: '100vw', 
-      overflow: 'hidden',
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-    }}>
+    <Box
+      sx={{
+        height: '100vh',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        overflow: 'hidden'
+      }}
+    >
       <Container 
         maxWidth="lg" 
         sx={{ 
-          height: '100%', 
-          px: 0, 
-          py: 0, 
+          height: '100vh', 
+          py: 2,
           display: 'flex',
           flexDirection: 'column'
         }}
@@ -338,63 +528,93 @@ export const Chat = () => {
         <Paper 
           elevation={8} 
           sx={{ 
-            height: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            borderRadius: 0, 
-            overflow: 'hidden', 
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 3,
+            overflow: 'hidden',
             background: 'rgba(255, 255, 255, 0.95)',
-            position: 'relative'
           }}
         >
-          
           {/* Header */}
-          <Box sx={{ 
-            p: 2, 
-            bgcolor: 'primary.main', 
-            color: 'white', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            flexShrink: 0 
-          }}>
+          <Box 
+            sx={{ 
+              p: 2, 
+              bgcolor: 'primary.main', 
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0
+            }}
+          >
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>💬 Чат</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>Вы вошли как: {username}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                💬 Чат
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                Вы вошли как: {username}
+              </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton onClick={() => setShowOnlineUsers(!showOnlineUsers)} sx={{ color: 'white' }} title="Онлайн пользователи">
-                <Badge badgeContent={onlineUsers.length} color="secondary"><PeopleIcon /></Badge>
+              <IconButton 
+                onClick={() => setShowOnlineUsers(!showOnlineUsers)}
+                sx={{ color: 'white' }}
+                title="Онлайн пользователи"
+              >
+                <Badge badgeContent={onlineUsers.length} color="secondary">
+                  <PeopleIcon />
+                </Badge>
               </IconButton>
-              <IconButton onClick={toggleNotifications} sx={{ color: 'white' }} size="small">
-                <Badge color="secondary" variant="dot" invisible={!notificationsEnabled}><NotificationsIcon /></Badge>
+              <IconButton 
+                onClick={toggleNotifications} 
+                sx={{ color: 'white' }}
+                size="small"
+              >
+                <Badge color="secondary" variant="dot" invisible={!notificationsEnabled}>
+                  <NotificationsIcon />
+                </Badge>
               </IconButton>
             </Box>
           </Box>
 
-          {/* Main */}
+          {/* Main Content */}
           <Box sx={{ 
             display: 'flex', 
             flex: 1, 
-            height: 'calc(100vh - 80px)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            minHeight: 0
           }}>
+            {/* Online Users Sidebar */}
             {showOnlineUsers && (
-              <Box sx={{ 
-                width: 250, 
-                bgcolor: 'grey.50', 
-                borderRight: '1px solid', 
-                borderColor: 'grey.200', 
-                p: 2, 
-                overflowY: 'auto',
-                flexShrink: 0 
-              }}>
-                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><PeopleIcon /> Онлайн ({onlineUsers.length})</Typography>
+              <Box 
+                sx={{ 
+                  width: 250, 
+                  bgcolor: 'grey.50',
+                  borderRight: '1px solid',
+                  borderColor: 'grey.200',
+                  p: 2,
+                  overflow: 'auto',
+                  flexShrink: 0
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PeopleIcon /> Онлайн ({onlineUsers.length})
+                </Typography>
                 <List dense>
-                  {onlineUsers.map((user, idx) => (
-                    <ListItem key={idx}>
-                      <ListItemAvatar><Avatar {...stringAvatar(user)} /></ListItemAvatar>
-                      <ListItemText primary={user} secondary="online" secondaryTypographyProps={{ color: 'success.main', fontSize: '0.7rem' }}/>
+                  {onlineUsers.map((user, index) => (
+                    <ListItem key={index}>
+                      <ListItemAvatar>
+                        <Avatar {...stringAvatar(user)} />
+                      </ListItemAvatar>
+                      <ListItemText 
+                        primary={user} 
+                        secondary="online"
+                        secondaryTypographyProps={{
+                          color: 'success.main',
+                          fontSize: '0.7rem'
+                        }}
+                      />
                     </ListItem>
                   ))}
                 </List>
@@ -406,29 +626,29 @@ export const Chat = () => {
               flex: 1, 
               display: 'flex', 
               flexDirection: 'column',
-              height: '100%',
-              overflow: 'hidden'
+              minHeight: 0
             }}>
+              {/* Typing Indicator */}
               {typingUsers.length > 0 && (
                 <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
-                  <Typography variant="caption" color="text.secondary">{`${typingUsers.join(', ')} печатает...`}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {`${typingUsers.join(', ')} печатает...`}
+                  </Typography>
                 </Box>
               )}
-              
+
+              {/* Error Alert */}
               {error && (
                 <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
-                  <Alert severity="error" onClose={() => setError('')}>{error}</Alert>
+                  <Alert severity="error" onClose={() => setError('')}>
+                    {error}
+                  </Alert>
                 </Box>
               )}
-              
-              {/* Messages - ТОЛЬКО ЭТА ОБЛАСТЬ СКРОЛЛИТСЯ */}
-              <Box sx={{ 
-                flex: 1, 
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                height: '100%'
-              }}>
-                <List sx={{ p: 1 }}>
+
+              {/* Messages List */}
+              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                <List sx={{ p: 1, bgcolor: 'background.default' }}>
                   {messages.map(msg => (
                     <ListItem 
                       key={msg.id} 
@@ -438,65 +658,51 @@ export const Chat = () => {
                         py: 0.5
                       }}
                     >
-                      <Paper 
+                      <Box 
                         sx={{ 
-                          p: 1.5, 
-                          bgcolor: msg.isMe ? 'primary.light' : 'grey.100', 
-                          maxWidth: '70%', 
-                          wordBreak: 'break-word',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          bgcolor: msg.isMe ? 'primary.light' : 'white',
+                          p: 2,
+                          borderRadius: 2,
+                          maxWidth: '70%',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          border: msg.isMe ? 'none' : '1px solid',
+                          borderColor: 'grey.200'
                         }}
                       >
                         <Typography 
                           variant="caption" 
                           sx={{ 
-                            fontWeight: 'bold', 
-                            color: msg.isMe ? 'primary.dark' : 'text.primary',
                             display: 'block',
+                            color: msg.isMe ? 'primary.dark' : 'text.secondary',
+                            fontWeight: 'bold',
                             mb: 0.5
                           }}
                         >
-                          {msg.sender}
+                          {msg.sender} • {msg.time}
                         </Typography>
                         {renderMessageContent(msg)}
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            display: 'block', 
-                            textAlign: 'right', 
-                            mt: 0.5,
-                            color: 'text.secondary'
-                          }}
-                        >
-                          {msg.time}
-                        </Typography>
-                      </Paper>
+                      </Box>
                     </ListItem>
                   ))}
                   <div ref={messagesEndRef} />
                 </List>
               </Box>
 
+              {/* File Preview */}
+              {selectedFile && (
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
+                  {renderFilePreview(selectedFile)}
+                </Box>
+              )}
+
               {/* Input Area */}
               <Box sx={{ 
                 p: 2, 
                 borderTop: '1px solid', 
-                borderColor: 'grey.200',
+                borderColor: 'grey.200', 
                 flexShrink: 0 
               }}>
-                {selectedFile && renderFilePreview(selectedFile)}
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Введите сообщение"
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    onKeyPress={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                    onKeyUp={handleTyping}
-                    multiline
-                    maxRows={4}
-                    variant="outlined"
-                  />
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -505,19 +711,32 @@ export const Chat = () => {
                     accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt"
                   />
                   <IconButton 
-                    onClick={() => fileInputRef.current.click()} 
-                    size="large"
+                    onClick={() => fileInputRef.current?.click()} 
                     disabled={uploading}
                   >
                     <AttachFileIcon />
                   </IconButton>
+                  <TextField 
+                    fullWidth 
+                    multiline 
+                    maxRows={3} 
+                    value={message} 
+                    onChange={e => { 
+                      setMessage(e.target.value); 
+                      handleTyping(); 
+                    }} 
+                    placeholder="Введите сообщение..." 
+                    onKeyPress={e => e.key==='Enter'&&!e.shiftKey&&handleSend()} 
+                    disabled={uploading}
+                    variant="outlined"
+                  />
                   <Button 
                     variant="contained" 
                     onClick={handleSend} 
-                    disabled={uploading || (!message.trim() && !selectedFile)}
-                    sx={{ minWidth: '100px', height: '56px' }}
+                    disabled={(!message.trim() && !selectedFile) || uploading}
+                    sx={{ minWidth: 56, height: 56 }}
                   >
-                    {uploading ? <CircularProgress size={20} /> : <SendIcon />}
+                    {uploading ? <CircularProgress size={24} /> : <SendIcon />}
                   </Button>
                 </Box>
               </Box>
@@ -525,6 +744,8 @@ export const Chat = () => {
           </Box>
         </Paper>
       </Container>
+
+      {/* Модальное окно для просмотра изображений */}
       <ImageModal />
     </Box>
   );
