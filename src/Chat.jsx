@@ -173,7 +173,12 @@ export const Chat = () => {
 
   const renderFilePreview = (file) => {
     const type = getFileType(file.type);
-    if (type === 'image') return <Box sx={{ mt: 1, textAlign: 'center' }}><img src={URL.createObjectURL(file)} alt="" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}/><Typography variant="caption">{file.name}</Typography></Box>;
+    if (type === 'image') return (
+      <Box sx={{ mt: 1, textAlign: 'center' }}>
+        <img src={URL.createObjectURL(file)} alt="" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}/>
+        <Typography variant="caption">{file.name}</Typography>
+      </Box>
+    );
     return <Chip icon={getFileIcon(type)} label={file.name} onDelete={removeSelectedFile} variant="outlined" sx={{ mt: 1 }}/>;
   };
 
@@ -200,18 +205,41 @@ export const Chat = () => {
   }
 
   return (
-    <Paper sx={{ padding: 3, maxWidth: 600, margin: '20px auto' }}>
+    <Paper 
+      sx={{ 
+        padding: 3, 
+        maxWidth: 600, 
+        margin: '0 auto', 
+        height: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        bgcolor: '#f0f4f8'
+      }}
+    >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h5">Чат: {username}</Typography>
-        <IconButton onClick={toggleNotifications}><Badge color="primary" variant="dot" invisible={!notificationsEnabled}><NotificationsIcon /></Badge></IconButton>
+        <IconButton onClick={toggleNotifications}>
+          <Badge color="primary" variant="dot" invisible={!notificationsEnabled}>
+            <NotificationsIcon />
+          </Badge>
+        </IconButton>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <List sx={{ height: 400, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, mb: 2 }}>
+      <List 
+        sx={{ 
+          flexGrow: 1, 
+          overflowY: 'auto', 
+          bgcolor: '#e8edf3', 
+          borderRadius: 1, 
+          p: 1, 
+          mb: 2 
+        }}
+      >
         {messages.map(msg => (
           <ListItem key={msg.id} sx={{ justifyContent: msg.isMe ? 'flex-end' : 'flex-start', px: 1, py: 0.5 }}>
-            <Box sx={{ bgcolor: msg.isMe ? 'primary.light' : 'background.default', p: 1.5, borderRadius: 2, maxWidth: '80%', boxShadow: 1 }}>
+            <Box sx={{ bgcolor: msg.isMe ? 'primary.light' : 'background.paper', p: 1.5, borderRadius: 2, maxWidth: '80%', boxShadow: 1 }}>
               <Typography variant="caption">{msg.sender} • {msg.time}</Typography>
               {renderMessageContent(msg)}
             </Box>
@@ -225,8 +253,19 @@ export const Chat = () => {
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
         <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt"/>
         <IconButton onClick={() => fileInputRef.current?.click()} disabled={uploading}><AttachFileIcon /></IconButton>
-        <TextField fullWidth multiline maxRows={3} value={message} onChange={e => { setMessage(e.target.value); handleTyping(); }} placeholder="Введите сообщение..." onKeyPress={e => e.key==='Enter'&&!e.shiftKey&&handleSend()} disabled={uploading}/>
-        <Button variant="contained" onClick={handleSend} disabled={(!message.trim() && !selectedFile) || uploading}>{uploading?<CircularProgress size={24}/>:<SendIcon/>}</Button>
+        <TextField 
+          fullWidth 
+          multiline 
+          maxRows={3} 
+          value={message} 
+          onChange={e => { setMessage(e.target.value); handleTyping(); }} 
+          placeholder="Введите сообщение..." 
+          onKeyPress={e => e.key==='Enter' && !e.shiftKey && handleSend()} 
+          disabled={uploading}
+        />
+        <Button variant="contained" onClick={handleSend} disabled={(!message.trim() && !selectedFile) || uploading}>
+          {uploading ? <CircularProgress size={24}/> : <SendIcon/>}
+        </Button>
       </Box>
     </Paper>
   );
