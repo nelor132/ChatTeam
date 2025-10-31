@@ -13,7 +13,7 @@ const firebaseConfig = {
   authDomain: "websocketchat-eeede.firebaseapp.com",
   databaseURL: "https://websocketchat-eeede-default-rtdb.firebaseio.com", 
   projectId: "websocketchat-eeede",
-  storageBucket: "websocketchat-eeede.appspot.com", // исправлено
+  storageBucket: "websocketchat-eeede.appspot.com", 
   messagingSenderId: "1003362902789",
   appId: "1:1003362902789:web:3b556326b5e3a5b3f18d6c",
   measurementId: "G-YCBTZKXRPJ"
@@ -252,7 +252,4 @@ useEffect(() => {
   );
 };
 
-вот проект и он мне нравится, теперь ты с нуля по шагам объяснишь мне что делает каждая строка кода и зачем она нужна в коде, каждый метод и каждая функция. очень подробно и детально.
-построчно объясни, очень подробно каждый метод и функция и значения зачем для чего и как?
-ПО ШАГАМ.
 
