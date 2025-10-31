@@ -9,14 +9,14 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SendIcon from '@mui/icons-material/Send';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDOLA9e9wZAyvzH6N7Uey7ftm6phroFxqY",
-  authDomain: "websocket-project-396ca.firebaseapp.com",
-  databaseURL: "https://websocket-project-396ca-default-rtdb.firebaseio.com",
-  projectId: "websocket-project-396ca",
-  storageBucket: "websocket-project-396ca.firebasestorage.app",
-  messagingSenderId: "552534814436",
-  appId: "1:552534814436:web:ai5faad3d46f1f3efb06f1",
-  measurementId: "G-NOWW9F10LP"
+  apiKey: "AIzaSyBBGra56i6Bf99ueh0QqMKxu0K4WV8u1M4",
+  authDomain: "websocketchat-eeede.firebaseapp.com",
+  databaseURL: "https://websocketchat-eeede-default-rtdb.firebaseio.com", 
+  projectId: "websocketchat-eeede",
+  storageBucket: "websocketchat-eeede.appspot.com", // исправлено
+  messagingSenderId: "1003362902789",
+  appId: "1:1003362902789:web:3b556326b5e3a5b3f18d6c",
+  measurementId: "G-YCBTZKXRPJ"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -255,3 +255,4 @@ useEffect(() => {
 вот проект и он мне нравится, теперь ты с нуля по шагам объяснишь мне что делает каждая строка кода и зачем она нужна в коде, каждый метод и каждая функция. очень подробно и детально.
 построчно объясни, очень подробно каждый метод и функция и значения зачем для чего и как?
 ПО ШАГАМ.
+
