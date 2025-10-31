@@ -77,7 +77,6 @@ export const Chat = () => {
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Загрузка ника из localStorage
   useEffect(() => {
     const savedUsername = localStorage.getItem('chatUsername');
     if (savedUsername) {
@@ -120,7 +119,6 @@ export const Chat = () => {
       }
     });
 
-    // Online users tracking
     const onlineUsersRef = ref(db, 'onlineUsers');
     const userRef = ref(db, `onlineUsers/${username}`);
     set(userRef, { username, lastSeen: serverTimestamp(), joinedAt: serverTimestamp() });
@@ -299,7 +297,15 @@ export const Chat = () => {
   );
 
   if (!isNameSet) return (
-    <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', p: 2 }}>
+    <Box sx={{ 
+      height: '100vh', 
+      width: '100vw', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      overflow: 'hidden',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }}>
       <Paper elevation={8} sx={{ p: 4, maxWidth: 400, width: '100%', textAlign: 'center', borderRadius: 3 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>Добро пожаловать в чат!</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>{username ? `Привет, ${username}!` : 'Введите ваш никнейм для начала общения'}</Typography>
@@ -313,12 +319,45 @@ export const Chat = () => {
   );
 
   return (
-    <Box sx={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      <Container maxWidth="lg" sx={{ height: '100%', px: 0, py: 0, display: 'flex', flexDirection: 'column' }}>
-        <Paper elevation={8} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 0, overflow: 'hidden', background: 'rgba(255, 255, 255, 0.95)' }}>
+    <Box sx={{ 
+      height: '100vh', 
+      width: '100vw', 
+      overflow: 'hidden',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+    }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          height: '100%', 
+          px: 0, 
+          py: 0, 
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Paper 
+          elevation={8} 
+          sx={{ 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            borderRadius: 0, 
+            overflow: 'hidden', 
+            background: 'rgba(255, 255, 255, 0.95)',
+            position: 'relative'
+          }}
+        >
           
           {/* Header */}
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'primary.main', 
+            color: 'white', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            flexShrink: 0 
+          }}>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 'bold' }}>💬 Чат</Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>Вы вошли как: {username}</Typography>
@@ -334,9 +373,22 @@ export const Chat = () => {
           </Box>
 
           {/* Main */}
-          <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flex: 1, 
+            height: 'calc(100vh - 80px)',
+            overflow: 'hidden'
+          }}>
             {showOnlineUsers && (
-              <Box sx={{ width: 250, bgcolor: 'grey.50', borderRight: '1px solid', borderColor: 'grey.200', p: 2, overflow: 'auto', flexShrink: 0 }}>
+              <Box sx={{ 
+                width: 250, 
+                bgcolor: 'grey.50', 
+                borderRight: '1px solid', 
+                borderColor: 'grey.200', 
+                p: 2, 
+                overflowY: 'auto',
+                flexShrink: 0 
+              }}>
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><PeopleIcon /> Онлайн ({onlineUsers.length})</Typography>
                 <List dense>
                   {onlineUsers.map((user, idx) => (
@@ -350,19 +402,74 @@ export const Chat = () => {
             )}
 
             {/* Chat Area */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              {typingUsers.length > 0 && <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}><Typography variant="caption" color="text.secondary">{`${typingUsers.join(', ')} печатает...`}</Typography></Box>}
-              {error && <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}><Alert severity="error" onClose={() => setError('')}>{error}</Alert></Box>}
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              height: '100%',
+              overflow: 'hidden'
+            }}>
+              {typingUsers.length > 0 && (
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
+                  <Typography variant="caption" color="text.secondary">{`${typingUsers.join(', ')} печатает...`}</Typography>
+                </Box>
+              )}
               
-              {/* Messages */}
-              <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1 }}>
-                <List>
+              {error && (
+                <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
+                  <Alert severity="error" onClose={() => setError('')}>{error}</Alert>
+                </Box>
+              )}
+              
+              {/* Messages - ТОЛЬКО ЭТА ОБЛАСТЬ СКРОЛЛИТСЯ */}
+              <Box sx={{ 
+                flex: 1, 
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                height: '100%'
+              }}>
+                <List sx={{ p: 1 }}>
                   {messages.map(msg => (
-                    <ListItem key={msg.id} sx={{ justifyContent: msg.isMe ? 'flex-end' : 'flex-start' }}>
-                      <Paper sx={{ p: 1.5, bgcolor: msg.isMe ? 'primary.light' : 'grey.100', maxWidth: '70%', wordBreak: 'break-word' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold', color: msg.isMe ? 'primary.dark' : 'text.primary' }}>{msg.sender}</Typography>
+                    <ListItem 
+                      key={msg.id} 
+                      sx={{ 
+                        justifyContent: msg.isMe ? 'flex-end' : 'flex-start',
+                        px: 1,
+                        py: 0.5
+                      }}
+                    >
+                      <Paper 
+                        sx={{ 
+                          p: 1.5, 
+                          bgcolor: msg.isMe ? 'primary.light' : 'grey.100', 
+                          maxWidth: '70%', 
+                          wordBreak: 'break-word',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontWeight: 'bold', 
+                            color: msg.isMe ? 'primary.dark' : 'text.primary',
+                            display: 'block',
+                            mb: 0.5
+                          }}
+                        >
+                          {msg.sender}
+                        </Typography>
                         {renderMessageContent(msg)}
-                        <Typography variant="caption" sx={{ display: 'block', textAlign: 'right', mt: 0.5 }}>{msg.time}</Typography>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            display: 'block', 
+                            textAlign: 'right', 
+                            mt: 0.5,
+                            color: 'text.secondary'
+                          }}
+                        >
+                          {msg.time}
+                        </Typography>
                       </Paper>
                     </ListItem>
                   ))}
@@ -370,24 +477,48 @@ export const Chat = () => {
                 </List>
               </Box>
 
-              {/* Input */}
-              <Box sx={{ p: 2, flexShrink: 0 }}>
+              {/* Input Area */}
+              <Box sx={{ 
+                p: 2, 
+                borderTop: '1px solid', 
+                borderColor: 'grey.200',
+                flexShrink: 0 
+              }}>
                 {selectedFile && renderFilePreview(selectedFile)}
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
                   <TextField
                     fullWidth
                     placeholder="Введите сообщение"
                     value={message}
                     onChange={e => setMessage(e.target.value)}
-                    onKeyPress={e => e.key==='Enter' && handleSend()}
+                    onKeyPress={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                     onKeyUp={handleTyping}
                     multiline
                     maxRows={4}
                     variant="outlined"
                   />
-                  <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} />
-                  <IconButton onClick={() => fileInputRef.current.click()} size="large"><AttachFileIcon /></IconButton>
-                  <Button variant="contained" onClick={handleSend} disabled={uploading} endIcon={uploading ? <CircularProgress size={20}/> : <SendIcon />}>Отправить</Button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    style={{ display: 'none' }} 
+                    onChange={handleFileSelect} 
+                    accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt"
+                  />
+                  <IconButton 
+                    onClick={() => fileInputRef.current.click()} 
+                    size="large"
+                    disabled={uploading}
+                  >
+                    <AttachFileIcon />
+                  </IconButton>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleSend} 
+                    disabled={uploading || (!message.trim() && !selectedFile)}
+                    sx={{ minWidth: '100px', height: '56px' }}
+                  >
+                    {uploading ? <CircularProgress size={20} /> : <SendIcon />}
+                  </Button>
                 </Box>
               </Box>
             </Box>
