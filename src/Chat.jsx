@@ -313,9 +313,9 @@ export const Chat = () => {
   );
 
   return (
-    <Box sx={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
+    <Box sx={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <Container maxWidth="lg" sx={{ height: '100%', px: 0, py: 0, display: 'flex', flexDirection: 'column' }}>
-        <Paper elevation={8} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 0, overflow: 'hidden', background: 'rgba(255, 255, 255, 0.95)' }}>
+        <Paper elevation={8} sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 0, overflow: 'hidden', background: 'rgba(255, 255, 255, 0.95)' }}>
           
           {/* Header */}
           <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
@@ -336,11 +336,11 @@ export const Chat = () => {
           {/* Main */}
           <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
             {showOnlineUsers && (
-              <Box sx={{ width: 250, bgcolor: 'grey.50', borderRight: '1px solid', borderColor: 'grey.200', p: 2, overflow: 'auto', flexShrink: 0 }}>
+              <Box sx={{ width: 250, bgcolor: 'grey.50', borderRight: '1px solid', borderColor: 'grey.200', p: 2, flexShrink: 0, overflow: 'hidden' }}>
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><PeopleIcon /> Онлайн ({onlineUsers.length})</Typography>
-                <List dense>
+                <List dense sx={{ m: 0, p: 0 }}>
                   {onlineUsers.map((user, idx) => (
-                    <ListItem key={idx}>
+                    <ListItem key={idx} sx={{ py: 0.5 }}>
                       <ListItemAvatar><Avatar {...stringAvatar(user)} /></ListItemAvatar>
                       <ListItemText primary={user} secondary="online" secondaryTypographyProps={{ color: 'success.main', fontSize: '0.7rem' }}/>
                     </ListItem>
@@ -352,13 +352,13 @@ export const Chat = () => {
             {/* Chat Area */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               {typingUsers.length > 0 && <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}><Typography variant="caption" color="text.secondary">{`${typingUsers.join(', ')} печатает...`}</Typography></Box>}
-              {error && <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}><Alert severity="error" onClose={() => setError('')}>{error}</Alert></Box>}
-              
+              {error && <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}><Alert severity="error">{error}</Alert></Box>}
+
               {/* Messages */}
-              <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1 }}>
-                <List>
+              <Box sx={{ flex: 1, px: 2, py: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', minHeight: 0, overflow: 'hidden' }}>
+                <List sx={{ m: 0, p: 0 }}>
                   {messages.map(msg => (
-                    <ListItem key={msg.id} sx={{ justifyContent: msg.isMe ? 'flex-end' : 'flex-start' }}>
+                    <ListItem key={msg.id} sx={{ justifyContent: msg.isMe ? 'flex-end' : 'flex-start', py: 0.5 }}>
                       <Paper sx={{ p: 1.5, bgcolor: msg.isMe ? 'primary.light' : 'grey.100', maxWidth: '70%', wordBreak: 'break-word' }}>
                         <Typography variant="caption" sx={{ fontWeight: 'bold', color: msg.isMe ? 'primary.dark' : 'text.primary' }}>{msg.sender}</Typography>
                         {renderMessageContent(msg)}
